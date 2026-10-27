@@ -19,44 +19,61 @@ def read_key():
 
 
 class Particle:
-    __slots__ = ('x', 'y', 'vx', 'vy', 'life', 'max_life', 'color')
-    def __init__(self, x, y, vx, vy, life, color):
+    __slots__ = ('x', 'y', 'vx', 'vy', 'life', 'max_life', 'color', 'grav', 'drag')
+    def __init__(self, x, y, vx, vy, life, color, grav, drag):
         self.x = x; self.y = y
         self.vx = vx; self.vy = vy
         self.life = life; self.max_life = life
         self.color = color
+        self.grav = grav; self.drag = drag
 
 
 class Fireworks:
+    # типы взрывов: (гравитация, торможение, скорость, жизнь)
+    STYLES = [
+        (0.020, 0.985, 1.00, 1.00),   # обычный — искры падают
+        (0.048, 0.982, 0.85, 1.10),   # тяжёлый — быстро сыплется вниз
+        (0.000, 0.945, 1.50, 1.20),   # зависает — разлетается и замирает
+    ]
+
     def __init__(self, w, h):
         self.w, self.h = w, h
         self.particles = []
         self.rockets = []
+        self.glow = {}   # (x, y) -> [r, g, b] — остывающие следы
 
     def launch(self):
-        x = random.randint(self.w // 6, 5 * self.w // 6)
+        x = random.randint(self.w // 8, 7 * self.w // 8)
         y = float(self.h - 1)
-        vy = -random.uniform(0.6, 1.2)
+        vy = -random.uniform(0.7, 1.4)
+        power = random.uniform(0.85, 1.3)   # разброс размера взрыва
         color = random.choice([
-            (255, 80, 80), (255, 200, 80), (255, 255, 80),
-            (80, 255, 80), (80, 200, 255), (200, 80, 255),
+            (255, 90, 90), (255, 210, 90), (255, 255, 120),
+            (90, 255, 90), (90, 210, 255), (210, 90, 255),
+            (255, 255, 255),
         ])
-        self.rockets.append([x, y, vy, color])
+        self.rockets.append([x, y, vy, color, power])
+
+    def burst(self, x, y, color, power):
+        grav, drag, spd_k, life_k = random.choice(self.STYLES)
+        for _ in range(int(random.randint(40, 75) * power)):
+            ang = random.random() * math.tau
+            spd = random.uniform(0.22, 0.75) * power * spd_k
+            vx = math.cos(ang) * spd
+            vy = math.sin(ang) * spd * 0.6   # поправка на вытянутость символов
+            life = int(random.randint(20, 45) * life_k)
+            g = grav * random.uniform(0.75, 1.25) if grav else random.uniform(0.0, 0.002)
+            d = drag + random.uniform(-0.004, 0.004)
+            self.particles.append(Particle(x, y, vx, vy, life, color, g, d))
 
     def update(self):
         new_rockets = []
         for r in self.rockets:
-            r[0] += random.uniform(-0.1, 0.1)
+            r[0] += random.uniform(-0.15, 0.15)
             r[1] += r[2]
-            explode_at = random.randint(3, max(4, self.h // 3))
+            explode_at = random.randint(max(3, self.h // 6), max(4, self.h // 2))
             if r[1] < explode_at:
-                for _ in range(random.randint(35, 70)):
-                    ang = random.random() * math.tau
-                    spd = random.uniform(0.15, 0.65)
-                    vx = math.cos(ang) * spd
-                    vy = math.sin(ang) * spd
-                    life = random.randint(8, 22)
-                    self.particles.append(Particle(r[0], r[1], vx, vy, life, r[3]))
+                self.burst(r[0], r[1], r[3], r[4])
             else:
                 new_rockets.append(r)
         self.rockets = new_rockets
@@ -65,13 +82,25 @@ class Fireworks:
         for p in self.particles:
             p.x += p.vx
             p.y += p.vy
-            p.vy += 0.03   # гравитация
-            p.vx *= 0.98
-            p.vy *= 0.98
+            p.vy += p.grav
+            p.vx *= p.drag
+            p.vy *= p.drag
             p.life -= 1
             if p.life > 0 and 0 <= p.x < self.w and 0 <= p.y < self.h:
                 alive.append(p)
+                x, y = int(p.x), int(p.y)
+                t = p.life / p.max_life
+                self.glow[(x, y)] = [c * (0.3 + 0.45 * t) for c in p.color]
         self.particles = alive
+
+        # следы гаснут постепенно, а не исчезают вместе с частицей
+        if self.glow:
+            faded = {}
+            for (x, y), c in self.glow.items():
+                nc = [v * 0.8 for v in c]
+                if max(nc) >= 32:
+                    faded[(x, y)] = nc
+            self.glow = faded
 
     def draw(self):
         grid = [[' '] * self.w for _ in range(self.h)]
@@ -86,9 +115,19 @@ class Fireworks:
             if 0 <= x < self.w and 0 <= y < self.h:
                 t = p.life / p.max_life
                 c = p.color
-                r_, g_, b_ = int(c[0] * t), int(c[1] * t), int(c[2] * t)
-                grid[y][x] = '·'
+                hot = t * t * 0.6                      # белое ядро в начале жизни
+                e = 0.45 + 0.55 * t                    # яркость держится дольше
+                r_ = min(255, int((c[0] * (1 - hot) + 255 * hot) * e))
+                g_ = min(255, int((c[1] * (1 - hot) + 255 * hot) * e))
+                b_ = min(255, int((c[2] * (1 - hot) + 255 * hot) * e))
+                grid[y][x] = '*' if t > 0.7 else '·'
                 colors[y][x] = f"\033[1;38;2;{r_};{g_};{b_}m"
+        for (x, y), c in self.glow.items():
+            if grid[y][x] != ' ':
+                continue
+            r_, g_, b_ = (min(255, int(v)) for v in c)
+            grid[y][x] = '.'
+            colors[y][x] = f"\033[38;2;{r_};{g_};{b_}m"
         out = ["\033[H"]
         for y in range(self.h):
             row = []
@@ -129,8 +168,10 @@ def main():
             if k == ' ':
                 paused = not paused
             if not paused:
-                if random.random() < 0.04:
+                if random.random() < 0.075:
                     fw.launch()
+                    if random.random() < 0.12:   # иногда по два сразу
+                        fw.launch()
                 fw.update()
             sys.stdout.write(fw.draw())
             sys.stdout.flush()
