@@ -35,16 +35,26 @@ def main():
     out.write("\033[?25l\033[2J")  # спрятать курсор + очистка
     try:
         while True:
+            # ресайз терминала: пересоздаём капли и чистим экран
+            try:
+                sz = os.get_terminal_size()
+                nw, nh = sz.columns, sz.lines - 1
+            except OSError:
+                nw, nh = 80, 24
+            if (nw, nh) != (w, h):
+                w, h = nw, nh
+                drops = [random.randint(-h, 0) for _ in range(w)]
+                speeds = [random.choice((1, 1, 1, 2)) for _ in range(w)]
+                glyphs = [random.choice(CHARS) for _ in range(w)]
+                out.write("\033[2J")
+
             for x in range(w):
                 head = drops[x]
 
-                # 1) Гасим самый дальний сегмент хвоста (стираем "призрак")
-                tail_end = head - TRAIL_LEN
-                if 0 <= tail_end < h:
-                    out.write(f"\033[{tail_end + 1};{x + 1}H ")
-                elif 0 <= tail_end - 1 < h:
-                    # на случай, если хвост чуть сдвинулся — тоже затрём
-                    out.write(f"\033[{tail_end};{x + 1}H ")
+                # 1) Стираем ряды, которые покинул хвост после сдвига капли
+                for y in range(head - TRAIL_LEN - speeds[x], head - TRAIL_LEN):
+                    if 0 <= y < h:
+                        out.write(f"\033[{y + 1};{x + 1}H ")
 
                 # 2) Рисуем хвост от тусклого к яркому
                 for i, color in enumerate(TRAIL):

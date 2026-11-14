@@ -140,8 +140,8 @@ def main():
                 w, h = sz.columns, sz.lines - 1
             except OSError:
                 w, h = 80, 24
-            w = max(40, w)
-            h = max(14, h)
+            w = max(4, w)
+            h = max(2, h)
 
             if (w, h) != size:
                 stars = make_stars(w, h)

@@ -90,14 +90,19 @@ class Keyboard:
     def __init__(self):
         self.win = (os.name == 'nt')
     def __enter__(self):
+        self.fd = None
+        self.old = None
         if not self.win:
             import termios, tty
-            self.fd = sys.stdin.fileno()
-            self.old = termios.tcgetattr(self.fd)
-            tty.setcbreak(self.fd)
+            try:
+                self.fd = sys.stdin.fileno()
+                self.old = termios.tcgetattr(self.fd)
+                tty.setcbreak(self.fd)
+            except termios.error:
+                self.old = None
         return self
     def __exit__(self, *a):
-        if not self.win:
+        if not self.win and self.old is not None:
             import termios
             try: termios.tcsetattr(self.fd, termios.TCSADRAIN, self.old)
             except Exception: pass
@@ -113,10 +118,14 @@ class Keyboard:
                     return None
                 return ch
             return None
+        if self.old is None:
+            return None  # stdin не tty — клавиши недоступны
         import select
         r, _, _ = select.select([sys.stdin], [], [], 0)
         if not r: return None
         ch = sys.stdin.read(1)
+        if not ch:
+            return None
         if ch == '\x1b':  # съесть escape-последовательность (стрелки)
             while True:
                 r, _, _ = select.select([sys.stdin], [], [], 0.005)
@@ -174,11 +183,13 @@ class App:
         out.append("\033[2K" + " " * pad + color + BOLD + sym + RESET + "\n")
         out.append("\033[2K\n")
 
-        # legend
+        # legend — ужимаем под высоту терминала (иначе кадр скроллит)
         col_w = 22
-        cols = max(1, w // col_w)
+        rows_max = max(1, h - 6)  # 6 строк занимают шапка, спиннер и футер
+        cols = max(1, (len(SPINNERS) + rows_max - 1) // rows_max)
+        cols = min(cols, max(1, w // col_w))
         rows = (len(SPINNERS) + cols - 1) // cols
-        for r in range(rows):
+        for r in range(min(rows, rows_max)):
             line = ""
             for c in range(cols):
                 i = c * rows + r
@@ -188,7 +199,7 @@ class App:
                 nm, fr = SPINNERS[i]
                 k = KEYS[i]
                 s = fr[self.frame % len(fr)]
-                marker = f"{GREEN}▶{RESET}" if i == self.idx else " "
+                marker = f"{GREEN}>{RESET}" if i == self.idx else " "
                 body = f"{marker} {BOLD}{k}{RESET} {s} {nm}"
                 line += pad_to(body, col_w)
             out.append("\033[2K" + line + "\n")

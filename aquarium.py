@@ -191,8 +191,8 @@ def main():
                 w, h = sz.columns, sz.lines - 1
             except OSError:
                 w, h = 80, 24
-            w = max(20, w)
-            h = max(8, h)
+            w = max(4, w)
+            h = max(2, h)
 
             k = read_key()
             if k == 'q':

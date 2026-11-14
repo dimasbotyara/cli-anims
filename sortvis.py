@@ -111,9 +111,9 @@ FUNCS = {'bubble': bubble, 'insertion': insertion,
 
 def color_for(v):
     t = v / 100.0
-    r = int(127 + 128 * math.sin(t * math.tau))
-    g = int(127 + 128 * math.sin(t * math.tau + 2.094))
-    b = int(127 + 128 * math.sin(t * math.tau + 4.188))
+    r = max(0, min(255, int(127 + 128 * math.sin(t * math.tau))))
+    g = max(0, min(255, int(127 + 128 * math.sin(t * math.tau + 2.094))))
+    b = max(0, min(255, int(127 + 128 * math.sin(t * math.tau + 4.188))))
     return f"\033[38;2;{r};{g};{b}m"
 
 
@@ -122,8 +122,11 @@ def main():
     old = None
     if os.name != 'nt':
         import termios, tty
-        old = termios.tcgetattr(fd)
-        tty.setcbreak(fd)
+        try:
+            old = termios.tcgetattr(fd)
+            tty.setcbreak(fd)
+        except termios.error:
+            old = None
     sys.stdout.write("\033[?25l\033[2J")
 
     w, h = 80, 22
@@ -187,7 +190,7 @@ def main():
             if paused:
                 status += "\033[1;33mPAUSED\033[0m  "
             status += "\033[2m[1-5 algo · R shuffle · Space pause · Q quit]\033[0m"
-            out.append("\033[2K" + status)
+            out.append("\033[2K" + status + "\033[J")  # \033[J — подмести хвост экрана
             sys.stdout.write(''.join(out))
             sys.stdout.flush()
             time.sleep(0.01)

@@ -253,8 +253,6 @@ def main():
                 w, h = sz.columns, sz.lines - 1
             except OSError:
                 w, h = 80, 24
-            w = max(30, w)
-            h = max(12, h)
 
             if (w, h) != size:
                 tree = Tree(w, h)

@@ -84,13 +84,17 @@ def main():
     show_trail = True
     show_trajectory = False
     trail = []
+    last_size = None
 
     fd = sys.stdin.fileno()
     old = None
-    if os.name != 'nt':
+    if os.name != 'nt' and os.isatty(fd):
         import termios, tty
-        old = termios.tcgetattr(fd)
-        tty.setcbreak(fd)
+        try:
+            old = termios.tcgetattr(fd)
+            tty.setcbreak(fd)
+        except termios.error:
+            old = None
 
     sys.stdout.write("\033[?25l\033[2J")
     try:
@@ -100,6 +104,11 @@ def main():
                 tw, th = sz.columns, sz.lines - 1
             except OSError:
                 tw, th = 80, 24
+
+            # при изменении размера стираем остатки прежнего кадра
+            if last_size is not None and (tw, th) != last_size:
+                sys.stdout.write("\033[2J")
+            last_size = (tw, th)
 
             if tw < CW + 4 or th < CH + 2:
                 sys.stdout.write("\033[H\033[2J")
@@ -205,7 +214,7 @@ def main():
                 status += "\033[1;33m[PAUSED]\033[0m"
             else:
                 status += "\033[2mT — trail · G — trajectory · Space — pause · Q — quit\033[0m"
-            out.append(status)
+            out.append("\033[2K" + status)
             sys.stdout.write(''.join(out))
             sys.stdout.flush()
             time.sleep(0.06)

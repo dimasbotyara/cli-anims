@@ -14,15 +14,24 @@ def escape(cre, cim, max_iter):
 def main():
     try:
         sz = os.get_terminal_size()
-        w, h = sz.columns, sz.lines - 1
+        w, h = max(1, sz.columns), max(1, sz.lines - 1)
     except OSError:
         w, h = 80, 24
-    aspect = w / (2 * h)   # символ ~2x выше, чем шире
     zoom = 0.8
     max_iter = 70
     sys.stdout.write("\033[?25l\033[2J")
     try:
         while True:
+            # ресайз: пересчитываем геометрию кадра
+            try:
+                sz = os.get_terminal_size()
+                nw, nh = max(1, sz.columns), max(1, sz.lines - 1)
+            except OSError:
+                nw, nh = 80, 24
+            if (nw, nh) != (w, h):
+                w, h = nw, nh
+                sys.stdout.write("\033[2J")
+            aspect = w / (2 * h)   # символ ~2x выше, чем шире
             scale = 3.0 / zoom
             yr = scale / aspect
             x0, y0 = CX - scale/2, CY - yr/2

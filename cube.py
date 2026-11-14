@@ -45,6 +45,17 @@ def main():
     sys.stdout.write("\033[?25l\033[2J")
     try:
         while True:
+            # ресайз: перечитываем размер и пересчитываем масштаб
+            try:
+                sz = os.get_terminal_size()
+                nw, nh = sz.columns, sz.lines - 1
+            except OSError:
+                nw, nh = W, H
+            if (nw, nh) != (W, H):
+                W, H = nw, nh
+                scale = min(W, H * 2) * 0.35
+                sys.stdout.write("\033[2J")
+
             grid = [' '] * (W * H)
             proj = []
             for v in verts:

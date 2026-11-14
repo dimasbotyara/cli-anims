@@ -35,11 +35,15 @@ def main():
     old = None
     if os.name != 'nt':
         import termios, tty
-        old = termios.tcgetattr(fd)
-        tty.setcbreak(fd)
+        try:
+            old = termios.tcgetattr(fd)
+            tty.setcbreak(fd)
+        except termios.error:
+            old = None
     sys.stdout.write("\033[?25l\033[2J")
     angle = 0.0
     paused = False
+    last_size = None
     try:
         while True:
             try:
@@ -47,6 +51,9 @@ def main():
                 w, h = sz.columns, sz.lines - 2
             except OSError:
                 w, h = 80, 22
+            if (w, h) != last_size:
+                last_size = (w, h)
+                sys.stdout.write("\033[2J")
 
             k = read_key()
             if k == 'q':

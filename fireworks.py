@@ -146,8 +146,11 @@ def main():
     old = None
     if os.name != 'nt':
         import termios, tty
-        old = termios.tcgetattr(fd)
-        tty.setcbreak(fd)
+        try:
+            old = termios.tcgetattr(fd)
+            tty.setcbreak(fd)
+        except termios.error:
+            old = None
     sys.stdout.write("\033[?25l\033[2J")
     fw = None
     last_size = None
@@ -162,6 +165,7 @@ def main():
             if (w, h) != last_size or fw is None:
                 fw = Fireworks(w, h)
                 last_size = (w, h)
+                sys.stdout.write("\033[2J")
             k = read_key()
             if k == 'q':
                 break

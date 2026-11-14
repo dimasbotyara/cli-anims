@@ -7,17 +7,28 @@ def main():
     except OSError:
         w, h = 80, 24
     chars = ['.', '*', '+', '·']
-    flakes = []
-    for _ in range(180):
-        flakes.append([
+    def make_flakes(w, h):
+        return [[
             random.uniform(0, w), random.uniform(0, h),
             random.uniform(0.3, 2.0), random.uniform(0, 6.28),
             random.choice(chars),
-        ])
+        ] for _ in range(180)]
+    flakes = make_flakes(w, h)
     t = 0.0
     sys.stdout.write("\033[?25l\033[2J")
     try:
         while True:
+            # ресайз: пересоздаём снежинки под новый размер
+            try:
+                sz = os.get_terminal_size()
+                nw, nh = sz.columns, sz.lines - 1
+            except OSError:
+                nw, nh = 80, 24
+            if (nw, nh) != (w, h):
+                w, h = nw, nh
+                flakes = make_flakes(w, h)
+                sys.stdout.write("\033[2J")
+
             grid = [[' ']*w for _ in range(h)]
             col  = [[None]*w for _ in range(h)]
             for f in flakes:

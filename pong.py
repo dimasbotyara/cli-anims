@@ -56,6 +56,7 @@ class Pong:
         self.s2 = 0
         self.speed = 0.5   # базовая скорость мяча (клеток/сек)
         self.acc = 0.0
+        self.dead = False
 
     def serve(self, direction):
         self.bx = W // 2
@@ -72,48 +73,48 @@ class Pong:
             self.bx += self.vx * 0.4
             self.by += self.vy * 0.4
 
-        # стены сверху/снизу
-        if self.by < 0:
-            self.by = 0
-            self.vy = abs(self.vy)
-        elif self.by > H - 1:
-            self.by = H - 1
-            self.vy = -abs(self.vy)
+            # стены сверху/снизу — проверяем на каждом подшаге,
+            # иначе на высокой скорости мяч пролетает сквозь ракетку
+            if self.by < 0:
+                self.by = 0
+                self.vy = abs(self.vy)
+            elif self.by > H - 1:
+                self.by = H - 1
+                self.vy = -abs(self.vy)
 
-        # ракетка игрока (x=1)
-        if self.vx < 0 and self.bx <= 1:
-            if self.p1 <= self.by <= self.p1 + PADDLE_H - 1:
-                self.vx = abs(self.vx)
-                self.speed = min(2.0, self.speed + 0.05)
-                # подкрутка от края ракетки
-                hit = (self.by - self.p1) / (PADDLE_H - 1) * 2 - 1
-                self.vy = max(-1.2, min(1.2, self.vy + hit * 0.3))
-            elif self.bx < 0:
-                self.s2 += 1
-                if self.s2 >= WIN_SCORE:
-                    self.dead = True
-                else:
-                    self.serve(1)
-                return
+            # ракетка игрока (x=1)
+            if self.vx < 0 and self.bx <= 1:
+                if self.p1 <= self.by <= self.p1 + PADDLE_H - 1:
+                    self.vx = abs(self.vx)
+                    self.speed = min(2.0, self.speed + 0.05)
+                    # подкрутка от края ракетки
+                    hit = (self.by - self.p1) / (PADDLE_H - 1) * 2 - 1
+                    self.vy = max(-1.2, min(1.2, self.vy + hit * 0.3))
+                elif self.bx < 0:
+                    self.s2 += 1
+                    if self.s2 >= WIN_SCORE:
+                        self.dead = True
+                    else:
+                        self.serve(1)
+                    return
 
-        # ракетка ИИ (x=W-2)
-        if self.vx > 0 and self.bx >= W - 2:
-            if self.p2 <= self.by <= self.p2 + PADDLE_H - 1:
-                self.vx = -abs(self.vx)
-                self.speed = min(2.0, self.speed + 0.05)
-                hit = (self.by - self.p2) / (PADDLE_H - 1) * 2 - 1
-                self.vy = max(-1.2, min(1.2, self.vy + hit * 0.3))
-            elif self.bx > W - 1:
-                self.s1 += 1
-                if self.s1 >= WIN_SCORE:
-                    self.dead = True
-                else:
-                    self.serve(-1)
-                return
+            # ракетка ИИ (x=W-2)
+            if self.vx > 0 and self.bx >= W - 2:
+                if self.p2 <= self.by <= self.p2 + PADDLE_H - 1:
+                    self.vx = -abs(self.vx)
+                    self.speed = min(2.0, self.speed + 0.05)
+                    hit = (self.by - self.p2) / (PADDLE_H - 1) * 2 - 1
+                    self.vy = max(-1.2, min(1.2, self.vy + hit * 0.3))
+                elif self.bx > W - 1:
+                    self.s1 += 1
+                    if self.s1 >= WIN_SCORE:
+                        self.dead = True
+                    else:
+                        self.serve(-1)
+                    return
 
     def draw(self):
-        out = ["\033[H"]
-        out.append(f" Score: \033[1;32m{self.s1}\033[0m : \033[1;31m{self.s2}\033[0m\n")
+        rows = [f" Score: \033[1;32m{self.s1}\033[0m : \033[1;31m{self.s2}\033[0m"]
         grid = [[' '] * W for _ in range(H)]
         # ракетки
         for i in range(PADDLE_H):
@@ -126,19 +127,32 @@ class Pong:
         if 0 <= bx < W and 0 <= by < H:
             grid[by][bx] = '\033[1;97m●\033[0m'
         for row in grid:
-            out.append("|" + "".join(row) + "|\n")
-        out.append(f"\033[2mW/S — двигать · R — рестарт · Q — выход\033[0m\n")
-        sys.stdout.write("".join(out))
+            rows.append("|" + "".join(row) + "|")
+        rows.append("\033[2mW/S — двигать · R — рестарт · Q — выход\033[0m")
+        # без завершающего \n — кадр не скроллит терминал
+        sys.stdout.write("\033[H" + "\n".join(rows))
         sys.stdout.flush()
 
     def run(self):
+        # подгоняем поле под фактический размер терминала
+        try:
+            sz = os.get_terminal_size()
+            global W, H
+            W = max(20, min(W, sz.columns - 2))
+            H = max(8, min(H, sz.lines - 2))
+            self.reset()
+        except OSError:
+            pass
         self.dead = False
         fd = sys.stdin.fileno()
         old = None
         if os.name != 'nt':
             import termios, tty
-            old = termios.tcgetattr(fd)
-            tty.setcbreak(fd)
+            try:
+                old = termios.tcgetattr(fd)
+                tty.setcbreak(fd)
+            except termios.error:
+                old = None
         sys.stdout.write("\033[?25l\033[2J")
         last = time.time()
         try:

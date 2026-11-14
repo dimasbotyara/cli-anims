@@ -27,9 +27,10 @@ def step(grid, w, h):
 def main():
     try:
         sz = os.get_terminal_size()
-        w, h = sz.columns, sz.lines - 1
+        # поле = (строк - 2): строка заголовка + запас, чтобы кадр не скроллил
+        w, h = sz.columns, max(1, sz.lines - 2)
     except OSError:
-        w, h = 80, 24
+        w, h = 80, 22
 
     grid = new_grid(w, h)
     gen = 0
@@ -37,6 +38,17 @@ def main():
     sys.stdout.write("\033[?25l\033[2J")
     try:
         while True:
+            # ресайз: поле пересоздаётся под новый размер
+            try:
+                sz = os.get_terminal_size()
+                nw, nh = sz.columns, max(1, sz.lines - 2)
+            except OSError:
+                nw, nh = 80, 22
+            if (nw, nh) != (w, h):
+                w, h = nw, nh
+                grid = new_grid(w, h)
+                sys.stdout.write("\033[2J")
+
             buf = []
             for y in range(h):
                 row = grid[y]
@@ -44,7 +56,7 @@ def main():
                 buf.append('\033[0m\n')
             header = f" Life — gen {gen} "
             sys.stdout.write('\033[H' + header + ' ' * max(0, w - len(header)) + '\n')
-            sys.stdout.write(''.join(buf[:h - 1]))
+            sys.stdout.write(''.join(buf))
             sys.stdout.flush()
 
             grid, pop = step(grid, w, h)

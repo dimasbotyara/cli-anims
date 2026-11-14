@@ -15,6 +15,17 @@ def main():
     sys.stdout.write("\033[?25l\033[2J")
     try:
         while True:
+            # ресайз: перечитываем размер и пересчитываем центр проекции
+            try:
+                sz = os.get_terminal_size()
+                nw, nh = sz.columns, sz.lines - 1
+            except OSError:
+                nw, nh = 80, 24
+            if (nw, nh) != (w, h):
+                w, h = nw, nh
+                cx, cy = w / 2, h / 2
+                sys.stdout.write("\033[2J")
+
             buf = [[' '] * w for _ in range(h)]
             col = [[None] * w for _ in range(h)]
 

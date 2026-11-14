@@ -11,6 +11,16 @@ def main():
     t = 0.0
     try:
         while True:
+            # ресайз терминала: пересчитываем сетку и чистим экран
+            try:
+                sz = os.get_terminal_size()
+                ncols, nrows = sz.columns // 2, sz.lines - 1
+            except OSError:
+                ncols, nrows = 60, 20
+            if (ncols, nrows) != (cols, rows):
+                cols, rows = ncols, nrows
+                sys.stdout.write("\033[2J")
+
             buf = []
             for y in range(rows):
                 for x in range(cols):

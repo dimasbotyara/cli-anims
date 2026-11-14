@@ -164,6 +164,7 @@ def render(w, h):
 
 def main():
     sys.stdout.write("\033[?25l\033[2J")
+    last_size = None
     try:
         while True:
             try:
@@ -171,8 +172,10 @@ def main():
                 w, h = sz.columns, sz.lines - 1
             except OSError:
                 w, h = 80, 24
-            w = max(24, w)
-            h = max(8, h)
+            # при изменении размера стираем остатки прежнего кадра
+            if (w, h) != last_size:
+                last_size = (w, h)
+                sys.stdout.write("\033[2J")
             sys.stdout.write(render(w, h))
             sys.stdout.flush()
             time.sleep(0.04)

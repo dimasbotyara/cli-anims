@@ -7,8 +7,6 @@ def main():
     except OSError:
         w, h = 80, 24
 
-    cx = w // 2
-    amp = max(1, w // 2 - 3)
     cycles = 3
     chars = "ATGC"
     frame = 0
@@ -16,6 +14,18 @@ def main():
     sys.stdout.write("\033[?25l\033[2J")
     try:
         while True:
+            # ресайз: пересчитываем геометрию спирали
+            try:
+                sz = os.get_terminal_size()
+                nw, nh = sz.columns, sz.lines - 1
+            except OSError:
+                nw, nh = 80, 24
+            if (nw, nh) != (w, h):
+                w, h = nw, nh
+                sys.stdout.write("\033[2J")
+            cx = w // 2
+            amp = max(1, w // 2 - 3)
+
             grid = [[' '] * w for _ in range(h)]
             col = [[None] * w for _ in range(h)]
             for y in range(h):

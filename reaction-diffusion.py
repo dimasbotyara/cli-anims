@@ -113,8 +113,11 @@ def main():
     old = None
     if os.name != 'nt':
         import termios, tty
-        old = termios.tcgetattr(fd)
-        tty.setcbreak(fd)
+        try:
+            old = termios.tcgetattr(fd)
+            tty.setcbreak(fd)
+        except termios.error:
+            old = None
 
     sys.stdout.write("\033[?25l\033[2J")
 
@@ -132,6 +135,9 @@ def main():
                 tw, th = 80, 24
 
             if tw < 10 or th < 5:
+                key = read_key()
+                if key == 'q':
+                    break
                 sys.stdout.write("\033[H\033[2J" + "Терминал слишком маленький\n")
                 sys.stdout.flush()
                 time.sleep(0.3)
@@ -182,13 +188,16 @@ def main():
                 row.append("\033[0m")
                 out.append("".join(row) + "\n")
 
-            status = (f" {name:<8} f={f:.4f}  k={f:.4f}  "
-                      f"[1-8 preset · R reset · Space pause · Q quit]")
-            # f в строке статуса — исправим ниже, чтобы не дублировать
-            status = (f" {name:<8} f={f:.4f}  k={k:.4f}  "
-                      f"\033[2m[1-8 preset · R reset · Space pause · Q quit]\033[0m")
+            # статус живёт на последней строке терминала — не должен переноситься
             if paused:
-                status = "\033[1;33m[PAUSED]\033[0m " + status
+                status = f" {name} \033[1;33m[PAUSED]\033[0m"
+            elif tw >= 76:
+                status = (f" {name:<8} f={f:.4f}  k={k:.4f}  "
+                          "\033[2m[1-8 preset · R reset · Space pause · Q quit]\033[0m")
+            elif tw >= 30:
+                status = f" {name} f={f:.4f} k={k:.4f}"
+            else:
+                status = f" {name[:max(1, tw - 2)]}"
             out.append("\033[2K" + status)
 
             sys.stdout.write("".join(out))

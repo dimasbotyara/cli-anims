@@ -18,13 +18,28 @@ def main():
     except OSError:
         w, h = 80, 24
 
-    fire = [0] * (w * h)
-    for x in range(w):
-        fire[(h - 1) * w + x] = MAX  # нижний ряд — источник
+    def new_fire(w, h):
+        fire = [0] * (w * h)
+        for x in range(w):
+            fire[(h - 1) * w + x] = MAX  # нижний ряд — источник
+        return fire
+
+    fire = new_fire(w, h)
 
     sys.stdout.write("\033[?25l\033[2J")
     try:
         while True:
+            # ресайз: буфер пересоздаётся под новый размер
+            try:
+                sz = os.get_terminal_size()
+                nw, nh = sz.columns, sz.lines - 1
+            except OSError:
+                nw, nh = 80, 24
+            if (nw, nh) != (w, h):
+                w, h = nw, nh
+                fire = new_fire(w, h)
+                sys.stdout.write("\033[2J")
+
             for y in range(1, h):
                 for x in range(w):
                     val = fire[y * w + x]

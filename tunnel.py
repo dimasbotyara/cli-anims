@@ -110,8 +110,6 @@ def main():
                 w, h = sz.columns, sz.lines - 1
             except OSError:
                 w, h = 80, 24
-            w = max(30, w)
-            h = max(10, h)
 
             sys.stdout.write(render(w, h, t))
             sys.stdout.flush()

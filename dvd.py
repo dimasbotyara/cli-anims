@@ -211,8 +211,8 @@ def main():
                 w, h = sz.columns, sz.lines - 1
             except OSError:
                 w, h = 80, 24
-            w = max(20, w)
-            h = max(6, h)
+            w = max(6, w)   # пол под FALLBACK-логотип (4 символа) и физику
+            h = max(2, h)
 
             k = read_key()
             if k == 'q':
