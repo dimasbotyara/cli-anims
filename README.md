@@ -55,3 +55,27 @@ If you see garbled characters, check your locale: `export LANG=en_US.UTF-8`.
 | `sortvis.py` | Sorting algorithm visualizer | `1`–`5`, `R` — shuffle, `Space`, `Q` |
 | `spinner.py` | Spinner collection | letter/digit — select, `Space` — pause, `[` `]` — browse, `Ctrl+C` |
 | `warp.py` | Starfield flight | `Ctrl+C` |
+
+## Even more animations
+
+| File | What it shows | Controls |
+| --- | --- | --- |
+| `burning-ship.py` | Burning Ship fractal slowly zooming into the hull | `Ctrl+C` |
+| `city.py` | Night skyline: flickering windows, moon phases, meteors, a passing plane | `Ctrl+C` |
+| `dragon.py` | Glowing dragon curve, folding one level deeper every few seconds | `Ctrl+C` |
+| `elevator.py` | Two elevators with the SCAN algorithm serving passengers | `Space` — pause, `Q` — quit |
+| `galton.py` | Galton board: balls through pegs building a Gaussian histogram | `Space` — pause, `Q` — quit |
+| `julia.py` | Julia set with the `c` parameter orbiting the Mandelbrot cardioid | `Ctrl+C` |
+| `koch.py` | Rotating Koch snowflake with animated depth | `Ctrl+C` |
+| `langton.py` | Langton's ants with different rule strings on a torus | `Space` — pause, `Q` — quit |
+| `maze.py` | Maze generation (recursive backtracker) and BFS solving | `Space` — pause, `Q` — quit |
+| `pacman.py` | Self-playing Pac-Man with three ghosts and frightened mode | `Space` — pause, `Q` — quit |
+| `pendulum.py` | Three double pendulums diverging from tiny differences (chaos) | `Ctrl+C` |
+| `sandpile.py` | Abelian sandpile with avalanche counter | `Ctrl+C` |
+| `slime-mold.py` | Physarum slime mold weaving glowing transport networks | `Ctrl+C` |
+| `solar-system.py` | Planets on Keplerian orbits, Saturn's rings, a comet with a tail | `Ctrl+C` |
+| `spectrum.py` | Fake audio spectrum analyzer with peak-hold caps and a track ticker | `Space` — pause, `Q` — quit |
+| `tetris.py` | Tetris playing itself with a heuristic AI | `Space` — pause, `Q` — quit |
+| `traffic.py` | Road intersection: cars queueing on a working traffic light cycle | `Space` — pause, `Q` — quit |
+| `typewriter.py` | Someone typing Python snippets in vim, with syntax highlighting and typos | `Ctrl+C` |
+| `waves.py` | Interference of drifting wave sources on water | `Ctrl+C` |
