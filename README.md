@@ -4,6 +4,8 @@ A collection of terminal animations in pure Python: no dependencies, just the st
 
 ## Running
 
+Run `python3 main.py` and select an animation with ↑/↓ and Enter (or type its number if curses is unavailable). Ctrl+C clears the screen and exits without reopening the menu. To run an animation directly:
+
 ```bash
 python3 donut.py
 python3 blackhole.py
